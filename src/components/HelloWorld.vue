@@ -11,9 +11,9 @@
                 </div>
             </div>
             <div class="button-wrapper">
-                <button class="arrow-back" @click="getMessagesPrev"> back</button>
+                <button class="arrow-back" @click="getMessagesPrev" :disabled="isPrevPageDisable"> back</button>
                 <span class="count">{{count}}</span>
-                <button class="arrow-next" @click="getMessagesNext"> next</button>
+                <button class="arrow-next" @click="getMessagesNext" :disabled="isNextPageDisable"> next</button>
             </div>
         </div>
         <div class="message">
@@ -37,110 +37,124 @@
 </template>
 
 <script>
-  import {HTTP} from '../api';
+    import {HTTP} from '../api';
 
-  export default {
-    name: 'HelloWorld',
-    data() {
-      return {
-        text: '',
-        email: '',
-        author: '',
-        errors: [],
-        messages: [],
-        count: 1,
-        urlCount: 0,
-        errorMessage: null,
-      };
-    },
-    computed: {
-      computedPosts() {
-        const data = this.messages.docs || [];
-        return data;
-      },
-      isSubmitDisabled() {
-        return !this.author.length || !this.isEmailValid || !this.text.length;
-      },
-      isEmailValid() {
-        const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-        return re.test(String(this.email).toLowerCase());
-      }
-    },
-    created() {
-      HTTP.get('messages/list/0').then(response => {
-        this.messages = response.data;
-        this.messages.docs.reverse()
-      }).catch(e => {
-        this.errors.push(e);
-        console.log(this.errors);
-      });
-    },
+    export default {
+        name: 'HelloWorld',
+        data() {
+            return {
+                text: '',
+                email: '',
+                author: '',
+                errors: [],
+                messages: [],
+                count: 1,
+                urlCount: 0,
+                errorMessage: null,
+                prevPage: null,
+                nextPage: null
+            };
+        },
+        computed: {
+            computedPosts() {
+                const data = this.messages.docs || [];
+                return data;
+            },
+            isSubmitDisabled() {
+                return !this.author.length || !this.isEmailValid || !this.text.length;
+            },
+            isNextPageDisable() {
+                return !this.nextPage
+            },
+            isPrevPageDisable() {
+                return !this.prevPage
+            },
+            isEmailValid() {
+                const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+                return re.test(String(this.email).toLowerCase());
+            }
+        },
+        created() {
+            HTTP.get('messages/list/0').then(response => {
+                this.messages = response.data;
+                this.messages.docs.reverse()
+                this.nextPage = response.data.hasNextPage
+                this.prevPage = response.data.hasPrevPage
+            }).catch(e => {
+                this.errors.push(e);
+                console.log(this.errors);
+            });
+        },
 
-    methods: {
-      async onClickSend() {
-        if (!this.isSubmitDisabled) {
-          await this.postMessage();
-        }
-      },
+        methods: {
+            async onClickSend() {
+                if (!this.isSubmitDisabled) {
+                    await this.postMessage();
+                }
+            },
 
-      async postMessage() {
-        this.count = 1
-        this.urlCount = 0
-        if (!this.author) {
-          this.author = 'noname'
-        }
+            async postMessage() {
+                this.count = 1
+                this.urlCount = 0
+                if (!this.author) {
+                    this.author = 'noname'
+                }
 
-        const formData = {
-          message: this.text,
-          email: this.email,
-          author: this.author,
-        };
+                const formData = {
+                    message: this.text,
+                    email: this.email,
+                    author: this.author,
+                };
 
-        try {
-          const {data} = await HTTP.post('messages/single', formData);
-          this.messages.docs.push(data);
-          const newArray = this.messages.docs.shift()
-          console.log(this.messages.docs)
-          console.log(newArray)
-        } catch (e) {
-          console.log(e);
-        }
-      },
+                try {
+                    const {data} = await HTTP.post('messages/single', formData);
+                    this.messages.docs.push(data);
+                    const newArray = this.messages.docs.shift()
+                    console.log(newArray)
+                } catch (e) {
+                    console.log(e);
+                }
+            },
 
-      getMessagesNext() {
-        this.count++;
-        this.urlCount++;
-        HTTP.get(`messages/list/${this.urlCount}`).then(response => {
-          this.messages = response.data;
-          this.messages.docs.reverse()
-        }).catch(e => {
-          this.errors.push(e);
-          console.log(this.errors);
-        });
-      },
+            getMessagesNext() {
+                this.count++;
+                this.urlCount++;
+                HTTP.get(`messages/list/${this.urlCount}`).then(response => {
+                    this.messages = response.data;
+                    this.nextPage = response.data.hasNextPage
+                    this.prevPage = response.data.hasPrevPage
+                    console.log(this.nextPage)
+                    this.messages.docs.reverse()
+                }).catch(e => {
+                    this.errors.push(e);
+                    console.log(this.errors);
+                });
+            },
 
-      getMessagesPrev() {
-        this.count--;
-        this.urlCount--;
-        HTTP.get(`messages/list/${this.urlCount}`).then(response => {
-          this.messages = response.data;
-          this.messages.docs.reverse()
-        }).catch(e => {
-          this.errors.push(e);
-          console.log(this.errors);
-        });
-      },
+            getMessagesPrev() {
+                this.count--;
+                this.urlCount--;
+                HTTP.get(`messages/list/${this.urlCount}`).then(response => {
+                    this.messages = response.data;
+                    this.prevPage = response.data.hasPrevPage
+                    this.nextPage = response.data.hasNextPage
+                    this.messages.docs.reverse()
+                }).catch(e => {
+                    this.errors.push(e);
+                    console.log(this.errors);
+                });
+            },
 
-      setErrorMessage() {
-        this.errorMessage = this.isSubmitDisabled ?
-            `Please fill all required fields:
+            setErrorMessage() {
+                this.errorMessage = this.isSubmitDisabled ?
+                    `Please fill all required fields:
             ${!this.author.length ? ' Author,' : ''}
             ${!this.email.length ? ' Email,' : ''}
             ${!this.text.length ? ' Message,' : ''}!
             ${!this.isEmailValid && this.email.length ? 'Please check if email is valid.' : ''}` : null;
-      },
-    }
-  };
+            },
+        }
+    };
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
