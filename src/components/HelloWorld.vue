@@ -4,10 +4,8 @@
             <div class="single-message-wrapper" v-for="(item,id) in computedPosts" :key="id">
                 {{item.author}}: {{item.message}}
                 <div class="message-inf">
-                    <span>email: {{item.email}}</span>
-                    <span>author: {{item.author}}</span>
                     <span>Created: {{item.createdAt}}</span>
-                    <span>Update: {{item.updatedAt}}</span>
+                    <span>Updated: {{item.updatedAt}}</span>
                 </div>
             </div>
             <div class="button-wrapper">
@@ -172,7 +170,7 @@
     .get-massages-wrapper {
         display: flex;
         flex-direction: column;
-        background-color: black;
+        background-color: lightblue;
         justify-content: space-between;
         width: 50%;
         padding: 20px;
